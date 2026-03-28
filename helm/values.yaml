@@ -1,0 +1,88 @@
+frontend:
+  replicas: 2
+  containerPort: 80
+
+  image:
+    repository: akashsheoarn/ecom-frontend
+    tag: latest
+
+  service:
+    type: ClusterIP
+    port: 80
+
+  resources:
+    requests:
+      memory: "64Mi"
+      cpu: "250m"
+    limits:
+      memory: "128Mi"
+      cpu: "500m"
+
+backend:
+  replicas: 2
+  containerPort: 3000
+
+  image:
+    repository: akashsheoarn/ecom-backend
+    tag: latest
+
+  service:
+    type: ClusterIP
+    port: 3000
+
+  env:
+    mongodbUri: "mongodb://mongo-0.mongo:27017,mongo-1.mongo:27017,mongo-2.mongo:27017/app?replicaSet=rs0"
+    port: "3000"
+
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "256Mi"
+      cpu: "250m"
+
+  livenessProbe:
+    path: /health
+    initialDelaySeconds: 30
+    periodSeconds: 10
+
+  readinessProbe:
+    path: /health
+    initialDelaySeconds: 5
+    periodSeconds: 5
+
+database:
+  replicas: 3
+  containerPort: 27017
+
+  image:
+    repository: mongo
+    tag: "4.2"
+
+  replicaSetName: rs0
+  wiredTigerCacheSizeGB: "0.1"
+
+  service:
+    port: 27017
+
+  storageClass: gp2
+  storage: 1Gi
+
+  readinessProbe:
+    initialDelaySeconds: 10
+    periodSeconds: 5
+    timeoutSeconds: 2
+
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "250m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+
+ingress:
+  appHost: ecom.akashsheoran.in
+  argocdHost: argocd.akashsheoran.in
+  healthcheckPath: /health

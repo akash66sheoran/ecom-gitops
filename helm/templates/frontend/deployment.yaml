@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "ecom.frontend.fullname" . }}
+  labels:
+    app: frontend
+spec:
+  replicas: {{ .Values.frontend.replicas }}
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+      - name: frontend
+        image: "{{ .Values.frontend.image.repository }}:{{ .Values.frontend.image.tag }}"
+        ports:
+        - containerPort: {{ .Values.frontend.containerPort }}
+        resources:
+          requests:
+            memory: {{ .Values.frontend.resources.requests.memory }}
+            cpu: {{ .Values.frontend.resources.requests.cpu }}
+          limits:
+            memory: {{ .Values.frontend.resources.limits.memory }}
+            cpu: {{ .Values.frontend.resources.limits.cpu }}

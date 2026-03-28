@@ -1,0 +1,64 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ .Release.Name }}-mongo-init
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+    argocd.argoproj.io/hook: PostSync
+spec:
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+      - name: mongo-init
+        image: "{{ .Values.database.image.repository }}:{{ .Values.database.image.tag }}"
+        command:
+        - bash
+        - -c
+        - |
+          echo "⏳ Waiting for MongoDB pods to be ready..."
+
+          NAMESPACE="{{ .Release.Namespace }}"
+
+          # Wait for primary pod
+          until mongo --host mongo-0.mongo.${NAMESPACE}.svc.cluster.local --eval "db.adminCommand('ping')" >/dev/null 2>&1; do
+            echo "mongo-0 not ready..."
+            sleep 5
+          done
+
+          # Wait for all members DNS
+          for host in mongo-0.mongo.${NAMESPACE}.svc.cluster.local mongo-1.mongo.${NAMESPACE}.svc.cluster.local mongo-2.mongo.${NAMESPACE}.svc.cluster.local
+          do
+            echo "Checking DNS for $host..."
+            until getent hosts $host >/dev/null 2>&1; do
+              echo "$host not resolvable yet..."
+              sleep 3
+            done
+          done
+
+          echo "🔍 Checking if replica set is already initialized..."
+
+          RS_STATUS=$(mongo --quiet --host mongo-0.mongo.${NAMESPACE}.svc.cluster.local --eval "rs.status().ok" || echo 0)
+
+          if [ "$RS_STATUS" = "1" ]; then
+            echo "✅ Replica set already initialized, skipping..."
+          else
+            echo "⚡ Initializing replica set..."
+
+            mongo --host mongo-0.mongo.${NAMESPACE}.svc.cluster.local --eval "
+              rs.initiate({
+                _id: '{{ .Values.database.replicaSetName }}',
+                members: [
+                  { _id: 0, host: 'mongo-0.mongo.'\"${NAMESPACE}\"'.svc.cluster.local:27017' },
+                  { _id: 1, host: 'mongo-1.mongo.'\"${NAMESPACE}\"'.svc.cluster.local:27017' },
+                  { _id: 2, host: 'mongo-2.mongo.'\"${NAMESPACE}\"'.svc.cluster.local:27017' }
+                ]
+              })
+            "
+
+            echo "⏳ Waiting for replica set to stabilize..."
+            sleep 10
+          fi
+
+          echo "🔍 Final replica set status:"
+          mongo --host mongo-0.mongo.${NAMESPACE}.svc.cluster.local --eval "rs.status()"
