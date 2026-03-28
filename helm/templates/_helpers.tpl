@@ -1,15 +1,15 @@
 {{/*
-Return the chart name
+Chart name
 */}}
 {{- define "ecom.name" -}}
 {{- .Chart.Name -}}
 {{- end -}}
 
 {{/*
-Return the full release name
+Full release name
 */}}
 {{- define "ecom.fullname" -}}
-{{- .Release.Name -}}-{{ .Chart.Name }}
+{{- .Release.Name }}-{{ .Chart.Name }}
 {{- end -}}
 
 {{/*
@@ -23,19 +23,18 @@ Frontend fullname
 Backend fullname
 */}}
 {{- define "ecom.backend.fullname" -}}
-{{- end -}}
 {{- .Release.Name }}-backend
 {{- end -}}
 
 {{/*
-Frontend service name
+Frontend service
 */}}
 {{- define "ecom.frontend.service" -}}
 {{- .Release.Name }}-frontend-svc
 {{- end -}}
 
 {{/*
-Backend service name
+Backend service
 */}}
 {{- define "ecom.backend.service" -}}
 {{- .Release.Name }}-backend-svc
