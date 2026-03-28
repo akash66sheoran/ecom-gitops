@@ -19,7 +19,6 @@ spec:
           args:
             - |
               echo "Waiting for MongoDB to be ready..."
-
               NAMESPACE="{{ .Release.Namespace }}"
 
               until mongosh --host mongo-0.mongo.${NAMESPACE}.svc.cluster.local --eval "db.adminCommand('ping')" >/dev/null 2>&1
@@ -28,26 +27,14 @@ spec:
                 sleep 5
               done
 
-              echo "Checking replica set status..."
+              echo "Checking replica set..."
               RS_STATUS=$(mongosh --quiet --host mongo-0.mongo.${NAMESPACE}.svc.cluster.local --eval "rs.status().ok" || echo 0)
 
               if [ "$RS_STATUS" = "1" ]; then
                 echo "Replica set already initialized"
               else
                 echo "Initializing replica set..."
-
-                mongosh --host mongo-0.mongo.${NAMESPACE}.svc.cluster.local <<EOF
-rs.initiate({
-  _id: "{{ .Values.database.replicaSetName }}",
-  members: [
-    { _id: 0, host: "mongo-0.mongo.${NAMESPACE}.svc.cluster.local:27017" },
-    { _id: 1, host: "mongo-1.mongo.${NAMESPACE}.svc.cluster.local:27017" },
-    { _id: 2, host: "mongo-2.mongo.${NAMESPACE}.svc.cluster.local:27017" }
-  ]
-})
-EOF
-
-                echo "Replica set initiated. Waiting..."
+                mongosh --host mongo-0.mongo.${NAMESPACE}.svc.cluster.local --eval "rs.initiate({_id: '{{ .Values.database.replicaSetName }}', members: [{ _id: 0, host: 'mongo-0.mongo.${NAMESPACE}.svc.cluster.local:27017' }, { _id: 1, host: 'mongo-1.mongo.${NAMESPACE}.svc.cluster.local:27017' }, { _id: 2, host: 'mongo-2.mongo.${NAMESPACE}.svc.cluster.local:27017' }]})"
                 sleep 15
               fi
 
