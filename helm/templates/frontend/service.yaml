@@ -2,6 +2,8 @@ apiVersion: v1
 kind: Service
 metadata:
   name: {{ include "ecom.frontend.fullname" . }}-svc
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
 spec:
   type: {{ .Values.frontend.service.type }}
   selector:

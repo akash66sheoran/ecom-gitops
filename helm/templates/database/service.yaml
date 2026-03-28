@@ -4,6 +4,8 @@ metadata:
   name: mongo
   labels:
     app: mongo
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
 spec:
   clusterIP: None
   ports:

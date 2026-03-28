@@ -10,6 +10,7 @@ metadata:
     alb.ingress.kubernetes.io/healthcheck-port: traffic-port
     alb.ingress.kubernetes.io/success-codes: "200"
     alb.ingress.kubernetes.io/group.name: ecom-alb
+    argocd.argoproj.io/sync-wave: "4"
 spec:
   ingressClassName: alb
   rules:

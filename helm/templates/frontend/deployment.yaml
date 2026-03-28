@@ -4,6 +4,8 @@ metadata:
   name: {{ include "ecom.frontend.fullname" . }}
   labels:
     app: frontend
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
 spec:
   replicas: {{ .Values.frontend.replicas }}
   selector:
