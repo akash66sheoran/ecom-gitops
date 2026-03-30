@@ -6,7 +6,7 @@ metadata:
   annotations:
     argocd.argoproj.io/hook: PostSync
     argocd.argoproj.io/hook-delete-policy: HookSucceeded
-    argocd.argoproj.io/sync-wave: "2"
+    argocd.argoproj.io/sync-wave: "1"
 spec:
   backoffLimit: 4
   template:
@@ -18,25 +18,39 @@ spec:
           command: ["/bin/bash", "-c"]
           args:
             - |
-              echo "Waiting for MongoDB to be ready..."
+              echo "⏳ Waiting for MongoDB pods to be ready..."
               NAMESPACE="{{ .Release.Namespace }}"
 
-              until mongosh --host mongo-0.mongo.${NAMESPACE}.svc.cluster.local --eval "db.adminCommand('ping')" >/dev/null 2>&1
+              # Wait for all Mongo pods to be ready
+              for host in mongo-0.mongo.${NAMESPACE}.svc.cluster.local mongo-1.mongo.${NAMESPACE}.svc.cluster.local mongo-2.mongo.${NAMESPACE}.svc.cluster.local
               do
-                echo "MongoDB not ready yet..."
-                sleep 5
+                until mongo --host $host --eval "db.adminCommand('ping')" >/dev/null 2>&1
+                do
+                  echo "$host not ready yet..."
+                  sleep 5
+                done
               done
 
-              echo "Checking replica set..."
-              RS_STATUS=$(mongosh --quiet --host mongo-0.mongo.${NAMESPACE}.svc.cluster.local --eval "rs.status().ok" || echo 0)
+              echo "🔍 Checking if replica set is already initialized..."
+              RS_STATUS=$(mongo --quiet --host mongo-0.mongo.${NAMESPACE}.svc.cluster.local --eval "rs.status().ok" || echo 0)
 
               if [ "$RS_STATUS" = "1" ]; then
-                echo "Replica set already initialized"
+                echo "✅ Replica set already initialized, skipping..."
               else
-                echo "Initializing replica set..."
-                mongosh --host mongo-0.mongo.${NAMESPACE}.svc.cluster.local --eval "rs.initiate({_id: '{{ .Values.database.replicaSetName }}', members: [{ _id: 0, host: 'mongo-0.mongo.${NAMESPACE}.svc.cluster.local:27017' }, { _id: 1, host: 'mongo-1.mongo.${NAMESPACE}.svc.cluster.local:27017' }, { _id: 2, host: 'mongo-2.mongo.${NAMESPACE}.svc.cluster.local:27017' }]})"
+                echo "⚡ Initializing replica set..."
+                mongo --host mongo-0.mongo.${NAMESPACE}.svc.cluster.local --eval '
+                  rs.initiate({
+                    _id: "{{ .Values.database.replicaSetName }}",
+                    members: [
+                      { _id: 0, host: "mongo-0.mongo.'${NAMESPACE}'.svc.cluster.local:27017" },
+                      { _id: 1, host: "mongo-1.mongo.'${NAMESPACE}'.svc.cluster.local:27017" },
+                      { _id: 2, host: "mongo-2.mongo.'${NAMESPACE}'.svc.cluster.local:27017" }
+                    ]
+                  })
+                '
+                echo "⏳ Waiting for replica set to stabilize..."
                 sleep 15
               fi
 
-              echo "Replica set status:"
-              mongosh --host mongo-0.mongo.${NAMESPACE}.svc.cluster.local --eval "rs.status()"
+              echo "🔍 Final replica set status:"
+              mongo --host mongo-0.mongo.${NAMESPACE}.svc.cluster.local --eval "rs.status()"
