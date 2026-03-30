@@ -1,0 +1,21 @@
+trigger: none
+
+pool:
+  vmImage: ubuntu-latest
+
+parameters:
+  - name: cluster_name
+    type: string
+    default: ""
+
+steps:
+- checkout: self
+
+- script: |
+    aws eks update-kubeconfig --region ap-south-1 --name ${{ parameters.cluster_name }}
+
+    kubectl apply -f argocd/ecom-app.yaml -n argocd
+  displayName: Deploy ArgoCD Applications
+  env:
+    AWS_ACCESS_KEY_ID: $(AWS_ACCESS_KEY_ID)
+    AWS_SECRET_ACCESS_KEY: $(AWS_SECRET_ACCESS_KEY)
