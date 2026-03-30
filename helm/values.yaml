@@ -31,7 +31,7 @@ backend:
     port: 3000
 
   env:
-    mongodbUri: "mongodb://mongo-0.mongo.ecom.svc.cluster.local:27017,mongo-1.mongo.ecom.svc.cluster.local:27017,mongo-2.mongo.ecom.svc.cluster.local:27017/?replicaSet=rs0"
+    mongodbUri: "mongodb://mongo-0.mongo:27017,mongo-1.mongo:27017,mongo-2.mongo:27017/app?replicaSet=rs0"
     port: "3000"
 
   resources:
