@@ -4,7 +4,7 @@ frontend:
 
   image:
     repository: akashsheoarn/ecom-frontend
-    tag: latest
+    tag: "153"
 
   service:
     type: ClusterIP
@@ -24,7 +24,7 @@ backend:
 
   image:
     repository: akashsheoarn/ecom-backend
-    tag: latest
+    tag: "153"
 
   service:
     type: ClusterIP
