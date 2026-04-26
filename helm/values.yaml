@@ -24,7 +24,7 @@ backend:
 
   image:
     repository: akashsheoarn/ecom-backend
-    tag: "189"
+    tag: "197"
 
   service:
     type: ClusterIP
