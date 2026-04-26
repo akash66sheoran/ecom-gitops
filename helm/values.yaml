@@ -4,7 +4,7 @@ frontend:
 
   image:
     repository: akashsheoarn/ecom-frontend
-    tag: "195"
+    tag: "198"
 
   service:
     type: ClusterIP
