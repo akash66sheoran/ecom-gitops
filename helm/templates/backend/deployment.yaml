@@ -3,45 +3,68 @@ kind: Deployment
 metadata:
   name: {{ include "ecom.backend.fullname" . }}
   labels:
-    app: backend
+    app.kubernetes.io/name: backend
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/part-of: ecom
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
   annotations:
     argocd.argoproj.io/sync-wave: "2"
+
 spec:
   replicas: {{ .Values.backend.replicas }}
+
   selector:
     matchLabels:
-      app: backend
+      app.kubernetes.io/name: backend
+      app.kubernetes.io/instance: {{ .Release.Name }}
+
   template:
     metadata:
       labels:
-        app: backend
+        app.kubernetes.io/name: backend
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/part-of: ecom
+
     spec:
       containers:
-      - name: backend
-        image: "{{ .Values.backend.image.repository }}:{{ .Values.backend.image.tag }}"
-        ports:
-        - containerPort: {{ .Values.backend.containerPort }}
-        env:
-        - name: MONGODB_URI
-          value: "{{ .Values.backend.env.mongodbUri }}"
-        - name: PORT
-          value: "{{ .Values.backend.env.port }}"
-        resources:
-          requests:
-            memory: {{ .Values.backend.resources.requests.memory }}
-            cpu: {{ .Values.backend.resources.requests.cpu }}
-          limits:
-            memory: {{ .Values.backend.resources.limits.memory }}
-            cpu: {{ .Values.backend.resources.limits.cpu }}
-        livenessProbe:
-          httpGet:
-            path: {{ .Values.backend.livenessProbe.path }}
-            port: {{ .Values.backend.containerPort }}
-          initialDelaySeconds: {{ .Values.backend.livenessProbe.initialDelaySeconds }}
-          periodSeconds: {{ .Values.backend.livenessProbe.periodSeconds }}
-        readinessProbe:
-          httpGet:
-            path: {{ .Values.backend.readinessProbe.path }}
-            port: {{ .Values.backend.containerPort }}
-          initialDelaySeconds: {{ .Values.backend.readinessProbe.initialDelaySeconds }}
-          periodSeconds: {{ .Values.backend.readinessProbe.periodSeconds }}
+        - name: backend
+
+          image: "{{ .Values.backend.image.repository }}:{{ .Values.backend.image.tag }}"
+          imagePullPolicy: {{ .Values.backend.image.pullPolicy }}
+
+          ports:
+            - name: http
+              containerPort: {{ .Values.backend.containerPort }}
+              protocol: TCP
+
+          env:
+            - name: MONGODB_URI
+              value: "{{ .Values.backend.env.mongodbUri }}"
+            - name: PORT
+              value: "{{ .Values.backend.env.port }}"
+
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.backend.livenessProbe.path }}
+              port: http
+            initialDelaySeconds: {{ .Values.backend.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.backend.livenessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.backend.livenessProbe.timeoutSeconds }}
+            failureThreshold: {{ .Values.backend.livenessProbe.failureThreshold }}
+
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.backend.readinessProbe.path }}
+              port: http
+            initialDelaySeconds: {{ .Values.backend.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.backend.readinessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.backend.readinessProbe.timeoutSeconds }}
+            failureThreshold: {{ .Values.backend.readinessProbe.failureThreshold }}
+
+          resources:
+            requests:
+              memory: {{ .Values.backend.resources.requests.memory }}
+              cpu: {{ .Values.backend.resources.requests.cpu }}
+            limits:
+              memory: {{ .Values.backend.resources.limits.memory }}
+              cpu: {{ .Values.backend.resources.limits.cpu }}

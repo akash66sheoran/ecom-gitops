@@ -2,57 +2,71 @@ apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: mongo
+  labels:
+    app.kubernetes.io/name: mongo
+    app.kubernetes.io/part-of: ecom
   annotations:
     argocd.argoproj.io/sync-wave: "0"
+
 spec:
   serviceName: "mongo"
   replicas: {{ .Values.database.replicas }}
+
   selector:
     matchLabels:
-      app: mongo
+      app.kubernetes.io/name: mongo
+
   template:
     metadata:
       labels:
-        app: mongo
-        replicaset: rs0.main
+        app.kubernetes.io/name: mongo
+        app.kubernetes.io/part-of: ecom
+
     spec:
       containers:
-      - name: mongo
-        image: "{{ .Values.database.image.repository }}:{{ .Values.database.image.tag }}"
-        command:
-        - "numactl"
-        - "--interleave=all"
-        - "mongod"
-        - "--wiredTigerCacheSizeGB"
-        - "{{ .Values.database.wiredTigerCacheSizeGB }}"
-        - "--bind_ip"
-        - "0.0.0.0"
-        - "--replSet"
-        - "{{ .Values.database.replicaSetName }}"
-        ports:
-        - containerPort: {{ .Values.database.containerPort }}
-        readinessProbe:
-          exec:
-            command:
-            - mongo
-            - --eval
-            - "db.adminCommand('ping')"
-          initialDelaySeconds: {{ .Values.database.readinessProbe.initialDelaySeconds }}
-          periodSeconds: {{ .Values.database.readinessProbe.periodSeconds }}
-          timeoutSeconds: {{ .Values.database.readinessProbe.timeoutSeconds }}
-        volumeMounts:
-        - name: mg-pv-cont
-          mountPath: /data/db
-        resources:
-          requests:
-            memory: {{ .Values.database.resources.requests.memory }}
-            cpu: {{ .Values.database.resources.requests.cpu }}
-          limits:
-            memory: {{ .Values.database.resources.limits.memory }}
-            cpu: {{ .Values.database.resources.limits.cpu }}
+        - name: mongo
+          image: "{{ .Values.database.image.repository }}:{{ .Values.database.image.tag }}"
+          imagePullPolicy: {{ .Values.database.image.pullPolicy }}
+
+          command:
+            - mongod
+            - "--bind_ip"
+            - "0.0.0.0"
+            - "--replSet"
+            - "{{ .Values.database.replicaSetName }}"
+            - "--wiredTigerCacheSizeGB"
+            - "{{ .Values.database.wiredTigerCacheSizeGB }}"
+
+          ports:
+            - name: mongo
+              containerPort: {{ .Values.database.containerPort }}
+
+          readinessProbe:
+            exec:
+              command:
+                - mongo
+                - --eval
+                - "db.adminCommand('ping')"
+            initialDelaySeconds: {{ .Values.database.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.database.readinessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.database.readinessProbe.timeoutSeconds }}
+            failureThreshold: {{ .Values.database.readinessProbe.failureThreshold }}
+
+          volumeMounts:
+            - name: mongo-data
+              mountPath: /data/db
+
+          resources:
+            requests:
+              memory: {{ .Values.database.resources.requests.memory }}
+              cpu: {{ .Values.database.resources.requests.cpu }}
+            limits:
+              memory: {{ .Values.database.resources.limits.memory }}
+              cpu: {{ .Values.database.resources.limits.cpu }}
+
   volumeClaimTemplates:
     - metadata:
-        name: mg-pv-cont
+        name: mongo-data
       spec:
         accessModes: ["ReadWriteOnce"]
         storageClassName: "{{ .Values.database.storageClass }}"

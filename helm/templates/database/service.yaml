@@ -3,13 +3,18 @@ kind: Service
 metadata:
   name: mongo
   labels:
-    app: mongo
+    app.kubernetes.io/name: mongo
+    app.kubernetes.io/part-of: ecom
   annotations:
     argocd.argoproj.io/sync-wave: "0"
+
 spec:
   clusterIP: None
-  ports:
-    - port: {{ .Values.database.service.port }}
-      targetPort: {{ .Values.database.containerPort }}
+
   selector:
-    app: mongo
+    app.kubernetes.io/name: mongo
+
+  ports:
+    - name: mongo
+      port: {{ .Values.database.service.port }}
+      targetPort: mongo

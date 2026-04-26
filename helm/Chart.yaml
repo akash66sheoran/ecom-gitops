@@ -1,6 +1,21 @@
 apiVersion: v2
 name: ecom
-description: Ecom Three Tier Application
+description: A production-style cloud-native three-tier e-commerce application deployed on Amazon EKS
 type: application
 version: 0.1.0
-appVersion: "1.0"
+appVersion: "1.0.0"
+keywords:
+  - ecom
+  - mern
+  - kubernetes
+  - eks
+  - helm
+  - argocd
+  - gitops
+  - mongodb
+home: https://github.com/akash66sheoran/ecom-gitops
+sources:
+  - https://github.com/akash66sheoran/ecom-gitops
+maintainers:
+  - name: Akash Sheoran
+    url: https://github.com/akash66sheoran

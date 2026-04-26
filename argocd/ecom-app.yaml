@@ -3,6 +3,11 @@ kind: Application
 metadata:
   name: ecom
   namespace: argocd
+  labels:
+    app.kubernetes.io/name: ecom
+    app.kubernetes.io/part-of: ecom
+    app.kubernetes.io/managed-by: argocd
+
 spec:
   project: default
 
@@ -10,6 +15,7 @@ spec:
     repoURL: https://github.com/akash66sheoran/ecom-gitops
     targetRevision: HEAD
     path: helm
+
     helm:
       valueFiles:
         - values.yaml
@@ -22,5 +28,17 @@ spec:
     automated:
       prune: true
       selfHeal: true
+
     syncOptions:
       - CreateNamespace=true
+      - PruneLast=true
+      - ApplyOutOfSyncOnly=true
+
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+
+  revisionHistoryLimit: 5

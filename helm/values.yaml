@@ -3,8 +3,9 @@ frontend:
   containerPort: 80
 
   image:
-    repository: akashsheoarn/ecom-frontend
+    repository: 259974370560.dkr.ecr.ap-south-1.amazonaws.com/ecom-app/frontend
     tag: "153"
+    pullPolicy: IfNotPresent
 
   service:
     type: ClusterIP
@@ -13,18 +14,33 @@ frontend:
   resources:
     requests:
       memory: "64Mi"
-      cpu: "250m"
+      cpu: "100m"
     limits:
       memory: "128Mi"
-      cpu: "500m"
+      cpu: "250m"
+
+  livenessProbe:
+    path: /health
+    initialDelaySeconds: 10
+    periodSeconds: 20
+    timeoutSeconds: 3
+    failureThreshold: 3
+
+  readinessProbe:
+    path: /health
+    initialDelaySeconds: 5
+    periodSeconds: 10
+    timeoutSeconds: 3
+    failureThreshold: 3
 
 backend:
   replicas: 2
   containerPort: 3000
 
   image:
-    repository: akashsheoarn/ecom-backend
+    repository: 259974370560.dkr.ecr.ap-south-1.amazonaws.com/ecom-app/backend
     tag: "153"
+    pullPolicy: IfNotPresent
 
   service:
     type: ClusterIP
@@ -43,14 +59,18 @@ backend:
       cpu: "250m"
 
   livenessProbe:
-    path: /health
+    path: /health/live
     initialDelaySeconds: 30
-    periodSeconds: 10
+    periodSeconds: 20
+    timeoutSeconds: 3
+    failureThreshold: 3
 
   readinessProbe:
-    path: /health
-    initialDelaySeconds: 5
-    periodSeconds: 5
+    path: /health/ready
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    timeoutSeconds: 3
+    failureThreshold: 3
 
 database:
   replicas: 3
@@ -59,6 +79,7 @@ database:
   image:
     repository: mongo
     tag: "4.2"
+    pullPolicy: IfNotPresent
 
   replicaSetName: rs0
   wiredTigerCacheSizeGB: "0.1"
@@ -66,13 +87,14 @@ database:
   service:
     port: 27017
 
-  storageClass: gp2
+  storageClass: gp3
   storage: 1Gi
 
   readinessProbe:
-    initialDelaySeconds: 10
-    periodSeconds: 5
-    timeoutSeconds: 2
+    initialDelaySeconds: 15
+    periodSeconds: 10
+    timeoutSeconds: 3
+    failureThreshold: 6
 
   resources:
     requests:
@@ -82,7 +104,53 @@ database:
       memory: "512Mi"
       cpu: "500m"
 
-ingress:
-  appHost: ecom.akashsheoran.in
-  argocdHost: argocd.akashsheoran.in
+appIngress:
+  enabled: true
+
+  className: alb
+
+  host: ecom.akashsheoran.in
   healthcheckPath: /health
+
+  annotations:
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}]'
+    alb.ingress.kubernetes.io/group.name: ecom-alb
+    alb.ingress.kubernetes.io/backend-protocol: HTTP
+
+platformIngress:
+  enabled: true
+
+  argocd:
+    enabled: true
+    host: argocd.akashsheoran.in
+    namespace: argocd
+    serviceName: argocd-server
+    servicePort: 80
+
+  kibana:
+    enabled: true
+    host: kibana.akashsheoran.in
+    namespace: observability
+    serviceName: kibana-kb-http
+    servicePort: 5601
+
+  grafana:
+    enabled: true
+    host: grafana.akashsheoran.in
+    namespace: monitoring
+    serviceName: monitoring-grafana
+    servicePort: 80
+
+  prometheus:
+    enabled: true
+    host: prometheus.akashsheoran.in
+    namespace: monitoring
+    serviceName: monitoring-kube-prometheus-prometheus
+    servicePort: 9090
+
+secrets:
+  enabled: true
+  name: mongo-secret-provider
+  mongoSecretName: "prod/ecom/mongodb-creds"

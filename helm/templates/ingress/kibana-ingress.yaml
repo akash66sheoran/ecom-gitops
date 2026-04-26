@@ -1,25 +1,25 @@
+{{- if and .Values.platformIngress.enabled .Values.platformIngress.kibana.enabled }}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: kibana-ingress
-  namespace: observability
+  name: {{ .Release.Name }}-kibana-ingress
+  namespace: {{ .Values.platformIngress.kibana.namespace }}
   annotations:
-    alb.ingress.kubernetes.io/scheme: internet-facing
-    alb.ingress.kubernetes.io/target-type: ip
-    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}]'
-    alb.ingress.kubernetes.io/group.name: ecom-alb
+    {{- range $key, $value := .Values.appIngress.annotations }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
     argocd.argoproj.io/sync-wave: "4"
-
 spec:
-  ingressClassName: alb
+  ingressClassName: {{ .Values.appIngress.className }}
   rules:
-    - host: kibana.akashsheoran.in   # change this
+    - host: {{ .Values.platformIngress.kibana.host }}
       http:
         paths:
           - path: /
             pathType: Prefix
             backend:
               service:
-                name: kibana-kb-http
+                name: {{ .Values.platformIngress.kibana.serviceName }}
                 port:
-                  number: 5601
+                  number: {{ .Values.platformIngress.kibana.servicePort }}
+{{- end }}
